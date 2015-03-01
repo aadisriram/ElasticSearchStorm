@@ -32,7 +32,7 @@ import twitter4j.auth.AccessToken;
 import twitter4j.conf.ConfigurationBuilder;
 
 import backtype.storm.Config;
-import backtype.storm.spout.SpoutOutputCollector;
+//import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichSpout;
@@ -40,10 +40,15 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
-@SuppressWarnings("serial")
-public class TwitterSampleSpout extends BaseRichSpout {
+import storm.trident.operation.TridentCollector;
+import storm.trident.spout.IBatchSpout;
 
-	SpoutOutputCollector _collector;
+@SuppressWarnings("serial")
+public class TwitterSampleSpout implements IBatchSpout {
+
+	// Trident batch size
+    private static final int RECORDS_PER_BATCH = 10;
+
 	LinkedBlockingQueue<Status> queue = null;
 	TwitterStream _twitterStream;
 	String consumerKey;
@@ -70,10 +75,8 @@ public class TwitterSampleSpout extends BaseRichSpout {
 	}
 
 	@Override
-	public void open(Map conf, TopologyContext context,
-			SpoutOutputCollector collector) {
+	public void open(Map conf, TopologyContext context) {
 		queue = new LinkedBlockingQueue<Status>(1000);
-		_collector = collector;
 
 		StatusListener listener = new StatusListener() {
 
@@ -129,16 +132,24 @@ public class TwitterSampleSpout extends BaseRichSpout {
 
 	}
 
-	@Override
-	public void nextTuple() {
-		Status ret = queue.poll();
-		if (ret == null) {
-			Utils.sleep(50);
-		} else {
-			_collector.emit(new Values(ret));
 
-		}
-	}
+	@Override
+    public void emitBatch( long batchId, TridentCollector collector ) {
+    	int emitted=0;
+    	while(emitted<RECORDS_PER_BATCH) {
+    		
+    		Status ret = queue.poll();
+			if (ret == null) {
+				Utils.sleep(50);
+			} else {
+				collector.emit(new Values(ret));
+				emitted++;
+			}
+    	}
+
+
+    }
+
 
 	@Override
 	public void close() {
@@ -153,16 +164,19 @@ public class TwitterSampleSpout extends BaseRichSpout {
 	}
 
 	@Override
-	public void ack(Object id) {
+	public void ack(long id) {
+		//System.out.println("Twitter spout ack = "+id.toString());
 	}
 
-	@Override
+	//@Override
 	public void fail(Object id) {
+		//System.out.println("Twitter spout fail = "+id.toString());
 	}
 
 	@Override
-	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields("tweet"));
+	public Fields getOutputFields() {
+		return (new Fields("tweet"));
 	}
+	
 
 }

@@ -47,20 +47,13 @@ function RandomSentenceSpout() {
     this.pending = {};
     var self = this;
 
-        twit.stream('statuses/filter', {track:trackwords}, function(stream) {
+    twit.stream('statuses/filter', {track:trackwords}, function(stream) {
         stream.on('data', function (data) {
             tweet_t = JSON.stringify(data);
             queue.putMessage(tweet_t);
         });
     });
 };
-
-// function temp(stream) {
-//     stream.on('data', function (data) {
-//         tweet_t = data;
-//         queue.putMessage(data);
-//     });
-// }
 
 RandomSentenceSpout.prototype = Object.create(Spout.prototype);
 RandomSentenceSpout.prototype.constructor = RandomSentenceSpout;
@@ -74,19 +67,23 @@ RandomSentenceSpout.prototype.nextTuple = function(done) {
         queue.putMessage(message);
 
         if(message != null) {
-            while(true) {
+            // while(true) {
                 var arr = [];
                 // message = queue.getMessageSync();
-                    arr.push(tweet_t);
-                    self.emit({tuple: arr, id: id}, function(taskIds) {
+                arr.push(tweet_t);
+                self.emit({tuple: arr, id: id}, function(taskIds) {
                     // self.log('GOT THIS FROM THE QUEUE :  ' + message);
-                    });
-                    done();
-            }
+                });
+                done();
+            // }
+        } else {
+            var arr = [];
+            self.emit({tuple: arr, id: id}, function(taskIds) {
+                    // self.log('GOT THIS FROM THE QUEUE :  ' + message);
+            });
+            done();
         }
     }, 100);
-
-    done();
 }
 
 RandomSentenceSpout.prototype.createNextTupleId = function() {

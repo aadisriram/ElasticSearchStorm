@@ -33,7 +33,6 @@ public class ParseTweet extends BaseFunction {
         //     extracter = new ContentExtracter();
         
         // String rawTweetJson = (String)tuple.get(0);
-        // // System.out.println("HELLOTY:" + rawTweetJson);
         // Status parsed = parse(rawTweetJson);
         // User user = parsed.getUser();
 
@@ -50,7 +49,6 @@ public class ParseTweet extends BaseFunction {
     private Status parse(String rawJson){
         try {
             Status parsed = TwitterObjectFactory.createStatus(rawJson);
-            System.out.println("TESTINGTWEET : " + parsed.getText());
             return parsed;
         } catch (Exception e) {
             e.printStackTrace();
