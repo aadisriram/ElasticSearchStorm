@@ -1,0 +1,45 @@
+To run the code and test its working please follow the steps below
+
+*****************************
+Part 1 
+*****************************
+
+You need to follow the README.md provided and setup elastic search and go through the various commands.
+
+*****************************
+Part 2
+*****************************
+
+1) Set your environment variables for the twitter dev keys
+2) In the folder that contains "pom.xml", run "mvn package"
+3) Run the following command to test the project code,
+	storm jar target/storm-starter-0.9.3-jar-with-dependencies.jar storm.starter.trident.project.RealTimeElasticSearchTopology
+4) The three queries are mentioned in the RealTimeElasticSearchTopology.java file.
+
+*****************************
+Part 3
+*****************************
+
+1) Copy file "stop-word" to the data folder at the root of your storm installation.
+	This is an extremely IMPORTANT step, please make sure the file is put into the data directory.
+2) Set your environment variables for the twitter dev keys
+3) In the folder that contains "pom.xml", run "mvn package"
+4) Run the following command to test the project code,
+	storm jar target/storm-starter-0.9.3-jar-with-dependencies.jar storm.starter.trident.project.countmin.CountMinSketchTopology
+5) In the CountMinSketchTopology.java file you can choose the type of query you want to make. For top-k, 	uncomment line 137
+   To get the count for words uncomment line 134 and comment out line 137
+6) The results alone can be made to display, append the following to instruction point 4
+	| grep "DRPC"
+7) To test out the "NodeJS" spout, please comment out lines 87-88 and uncomment line 91 and in the
+   ParseTweet.java file comment out lines 44-47 and uncomment lines 32-42. The spout in NodeJS is not perfect but can be tested for verifying that the data goes through the spout.
+
+
+Files to Check :
+
+1) BloomFilter.java => This is the custom bloomfilter to prevent stop words from being indexed in the
+   count min sketch.
+
+2) TopKQuery.java => This is the class that extends the BaseQueryFunction and is a seperate query method
+   that fetches the top-k words from the indexed tweets.
+
+3) CountMinSketchState.java => Contains the PriorityQueue that contains the top-k elements.

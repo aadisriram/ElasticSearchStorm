@@ -69,39 +69,26 @@ public class CountMinSketchTopology {
         }
     }
 
-	public static StormTopology buildTopology( LocalDRPC drpc ) {
+	public static StormTopology buildTopology( String[] filterWords, LocalDRPC drpc ) {
 
         TridentTopology topology = new TridentTopology();
 
         int width = 100;
 		int depth = 150;
 		int seed = 100;
-		int topk_count = 20;
+		int topk_count = 5;
 
-		String consumerKey = "v9BIUekmGglxjrty77VbNZdPM";
-    	String consumerSecret = "qD4mnlXLHPdhbDOrZvGSRJjv0UEzwxZD3cVbrSqQbWgMXRDn83";
-    	String accessToken = "25076520-1T97cLiNDmjqAgFcBDcnwPURkyxh1Ta6WQlTSZkpS";
-    	String accessTokenSecret = "NWnJflgeXljmeKtzkbei3oigd1ung2lahm3vYxJje7M60";
+		String consumerKey = System.getenv("TWITTER_CONSUMER_KEY");
+    	String consumerSecret = System.getenv("TWITTER_CONSUMER_SECRET");
+    	String accessToken = System.getenv("TWITTER_ACCESS_TOKEN_KEY");
+    	String accessTokenSecret = System.getenv("TWITTER_ACCESS_TOKEN_SECRET");
 
-        // Twitter topic of interest
-        //String[] arguments = args.clone();
-        String[] topicWords = {"love", "hate"};
-        //String[] topicWords = {};
         // Create Twitter's spout
 		TwitterSampleSpout spoutTweets = new TwitterSampleSpout(consumerKey, consumerSecret,
-									accessToken, accessTokenSecret, topicWords);
+									accessToken, accessTokenSecret, filterWords);
 
-        //NodeJS Spout
+        // NodeJS Spout
 		// RandomSentenceSpout spoutTweets = new RandomSentenceSpout();
-
-  //   	FixedBatchSpout spoutFixedBatch = new FixedBatchSpout(new Fields("sentence"), 3,
-		// 	new Values("the cow jumped over the moon"),
-		// 	new Values("the man went to the store and bought some candy"),
-		// 	new Values("four score and seven years ago"),
-		// 	new Values("how many apples can you eat"),
-		// 	new Values("to be or not to be the person"))
-		// 	;
-		// spoutFixedBatch.setCycle(false);
             
 		TridentState countMinDBMS = topology.newStream("tweets", spoutTweets)
 			.each(new Fields("tweet"), new ParseTweet(), new Fields("text", "tweetId", "user"))
@@ -111,18 +98,18 @@ public class CountMinSketchTopology {
 			.each(new Fields("lWords"), new BloomFilter(), new Fields("words"))
 			.each(new Fields("words"), new FilterNull())
 			.partitionPersist(new CountMinSketchStateFactory(depth, width, seed, topk_count), new Fields("words"), new CountMinSketchUpdater())
+			//.parallelismHint(3)
 			;
 
-
+		//Call this to get the count of words passed in the query
 		topology.newDRPCStream("get_count", drpc)
-			.parallelismHint(3)
 			.each(new Fields("args"), new Split(), new Fields("query"))
 			.stateQuery(countMinDBMS, new Fields("query"), new CountMinQuery(), new Fields("count"))
 			.project(new Fields("query", "count"))
 			;
 
+		//Call this to get the top-K words
 		topology.newDRPCStream("get_topk", drpc)
-			.parallelismHint(3)
 			.stateQuery(countMinDBMS, new Fields("args"), new TopKQuery(), new Fields("topk"))
 			.project(new Fields("topk"))
 			;
@@ -138,17 +125,21 @@ public class CountMinSketchTopology {
         LocalCluster cluster = new LocalCluster();
         LocalDRPC drpc = new LocalDRPC();
         	
+        String[] filterWords = args.clone();
         //cluster.submitTopology("get_count",conf, buildTopology(drpc));
-        cluster.submitTopology("get_count", conf, buildTopology(drpc));
+        cluster.submitTopology("get_count", conf, buildTopology(filterWords, drpc));
 
         for (int i = 0; i < 100; i++) {
+        	//Query type to get the count for certain words
             // System.out.println("DRPC RESULT: " + drpc.execute("get_count","love hate"));
+
+            //Query type to get the top-k items
             System.out.println("DRPC RESULT TOPK: " + drpc.execute("get_topk",""));
             Thread.sleep(3000);
         }
 
 		System.out.println("STATUS: OK");
 		//cluster.shutdown();
-        	//drpc.shutdown();
+        //drpc.shutdown();
 	}
 }

@@ -15,12 +15,18 @@ import java.io.InputStreamReader;
 
 /**
  * @author Aaditya Sriram (asriram4@ncsu.edu)
+ * Custom BloomFilter function, reads a list of stop words
+ * from "stop-word" file and filters any subsequent words that come in.
  */
 public class BloomFilter extends BaseFunction {
 
+    //Maintains Murmur Hash values for the stop words
     public static boolean[] murmurHashFilter = new boolean[100000];
+
+    //Maintains JavaHash values for the stop words
     public static boolean[] javaHashFilter = new boolean[100000];
 
+    //Static block to load the stop word initially
     static {
         try {
             BufferedReader input = new BufferedReader(new InputStreamReader(new FileInputStream("data/stop-word")));
@@ -49,11 +55,14 @@ public class BloomFilter extends BaseFunction {
 
     private boolean isStopWord(String word) {
 
+        //If the word length is less than 3, we can avoid it
         if(word.length() < 3)
             return true;
 
         int mHash = Math.abs(MurmurHash.hash(word));
         int sHash = Math.abs(word.hashCode());
+
+        //Checks set membership by calculating both hashes and checking the filters
         if(murmurHashFilter[mHash%100000] && javaHashFilter[sHash%100000])
             return true;
         

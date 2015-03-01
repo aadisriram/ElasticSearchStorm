@@ -12,6 +12,8 @@ import storm.starter.trident.project.countmin.state.TweetWord;
 
 /**
  *@author: Aaditya Sriram (asriram4@ncsu.edu)
+ *This query method is to get the top K items from 
+ *the count min sketch.
  */
 
 public class TopKQuery extends BaseQueryFunction<CountMinSketchState, String> {
@@ -21,7 +23,11 @@ public class TopKQuery extends BaseQueryFunction<CountMinSketchState, String> {
 
         //Looping through the current top-k words
         for(TweetWord tword : state.queue) {
-            result += "," + tword.word + " : " + tword.count;
+            result +=  " " + tword.word + " : " + tword.count + ",";
+        }
+
+        if(result.length() > 0) {
+            result = result.substring(0, result.length() - 1);
         }
 
         ret.add(result);

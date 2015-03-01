@@ -281,6 +281,10 @@ public class CountMinSketchState implements State, Serializable {
         return merged;
     }
 
+    /*
+     * Made the sketch class serializable so that it can be converted to
+     * a byte stream directly instead of field by field.
+    */
     public static byte[] serialize(CountMinSketchState sketch) {
 
         ByteArrayOutputStream bos = null;
@@ -293,14 +297,14 @@ public class CountMinSketchState implements State, Serializable {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            if (out != null) {
+            if(out != null) {
                 try {
                     out.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
-            if (bos != null) {
+            if(bos != null) {
                 try {
                     bos.close();
                 } catch (IOException e) {
@@ -308,9 +312,14 @@ public class CountMinSketchState implements State, Serializable {
                 }
             }
         }
+        
         return null;
     }
 
+    /*
+     * Deserialize method for the sketch. Since the class is serializable
+     * we can directly convert the data stream to an object.
+    */
     public static CountMinSketchState deserialize(byte[] data) {
 
         ByteArrayInputStream bis = null;
@@ -319,7 +328,7 @@ public class CountMinSketchState implements State, Serializable {
         try{
             bis = new ByteArrayInputStream(data);
             ois = new ObjectInputStream(bis);
-            CountMinSketchState sketch = (CountMinSketchState) (ois.readObject());
+            CountMinSketchState sketch = (CountMinSketchState)ois.readObject();
             return  sketch;
         } catch(IOException e) {
             e.printStackTrace();
