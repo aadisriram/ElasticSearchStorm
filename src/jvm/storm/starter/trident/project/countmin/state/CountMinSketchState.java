@@ -34,6 +34,11 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Collections;
 
+import java.util.Comparator;
+import java.util.PriorityQueue;
+
+import storm.starter.trident.project.countmin.state.TweetWord;
+
 //import com.clearspring.analytics.stream.membership.Filter;
 //import Filter;
 
@@ -57,6 +62,18 @@ public class CountMinSketchState implements State {
     double confidence;
     public SortedMap<Integer, String> topKMap;
     public Map<String, Integer> topKMapT;
+
+    class WordComparator implements Comparator<TweetWord> {
+
+        public int compare(TweetWord a, TweetWord b) {
+            if(a.count > b.count)
+                return 1;
+            else
+                return -1;
+        }
+    }
+
+    PriorityQueue<TweetWord> queue = new PriorityQueue<TweetWord>(10, new WordComparator());
 
     CountMinSketchState() {
         
@@ -161,8 +178,21 @@ public class CountMinSketchState implements State {
         size += count;
 
         if(item.trim().length() > 0) {
+            TweetWord tw = new TweetWord();
+            tw.word = item;
+            
+            if(queue.contains(tw)) {
+                queue.remove(tw);
+            }
 
             int ct = (int)estimateCount(item);
+            tw.count = ct;
+            queue.add(tw);
+
+            while(queue.size() > 10)
+                queue.poll();
+
+
             if(topKMapT.containsKey(item)) {
                 topKMap.remove(topKMapT.get(item));
             }

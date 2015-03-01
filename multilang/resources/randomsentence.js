@@ -25,6 +25,8 @@
 var storm = require('./storm');
 var Spout = storm.Spout;
 
+var tweet_t;
+
 var simplequeue = require('./node_modules/simplequeue');
 var queue = simplequeue.createQueue("tweets");
 
@@ -44,12 +46,21 @@ function RandomSentenceSpout() {
     this.runningTupleId = 0;
     this.pending = {};
     var self = this;
-    twit.stream('statuses/filter', {track:trackwords}, function(stream) {
+
+        twit.stream('statuses/filter', {track:trackwords}, function(stream) {
         stream.on('data', function (data) {
-            queue.putMessage(data);
+            tweet_t = JSON.stringify(data);
+            queue.putMessage(tweet_t);
         });
     });
 };
+
+// function temp(stream) {
+//     stream.on('data', function (data) {
+//         tweet_t = data;
+//         queue.putMessage(data);
+//     });
+// }
 
 RandomSentenceSpout.prototype = Object.create(Spout.prototype);
 RandomSentenceSpout.prototype.constructor = RandomSentenceSpout;
@@ -58,15 +69,24 @@ RandomSentenceSpout.prototype.nextTuple = function(done) {
     var self = this;
     var id = this.createNextTupleId();
 
+    setTimeout(function() {
         var message = queue.getMessageSync();
+        queue.putMessage(message);
+
         if(message != null) {
-            var arr = [];
-            arr.push(JSON.stringify(message));
-            self.emit({tuple: arr, id: id}, function(taskIds) {
-                self.log('GOT THIS FROM THE QUEUE :  ' + message);
-            });
+            while(true) {
+                var arr = [];
+                // message = queue.getMessageSync();
+                    arr.push(tweet_t);
+                    self.emit({tuple: arr, id: id}, function(taskIds) {
+                    // self.log('GOT THIS FROM THE QUEUE :  ' + message);
+                    });
+                    done();
+            }
         }
-        done();
+    }, 100);
+
+    done();
 }
 
 RandomSentenceSpout.prototype.createNextTupleId = function() {
@@ -76,13 +96,17 @@ RandomSentenceSpout.prototype.createNextTupleId = function() {
 }
 
 RandomSentenceSpout.prototype.ack = function(id, done) {
-    //this.log('Received ack for - ' + id);
+    this.log('Received ack for - ' + id);
+    delete this.pending[id];
     done();
 }
 
 RandomSentenceSpout.prototype.fail = function(id, done) {
     var self = this;
-    //this.log('Received fail for - ' + id + '. Retrying.');
+    this.log('Received fail for - ' + id + '. Retrying.');
+    this.emit({tuple: this.pending[id], id:id}, function(taskIds) {
+        self.log(self.pending[id] + ' sent to task ids - ' + taskIds);
+    });
     done();
 }
 

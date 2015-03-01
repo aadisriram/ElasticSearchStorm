@@ -30,6 +30,7 @@ storm/starter/trident/project/RealTimeElasticSearchTopology.class
 storm/starter/WordCountTopology$SplitSentence.class
 storm/starter/trident/tutorial/DRPCStockQueryTopology.class
 storm/starter/trident/tutorial/ChainedFiltersTopology.class
+storm/starter/trident/project/countmin/CountMinSketchTopology$RandomSentenceSpout.class
 storm/starter/trident/TridentReach$2.class
 storm/starter/ReachTopology$CountAggregator.class
 storm/starter/trident/project/functions/TweetBuilder.class
@@ -71,6 +72,7 @@ storm/starter/trident/TridentReach$StaticSingleKeyMapState.class
 storm/starter/trident/tutorial/FunctionTopology.class
 storm/starter/TransactionalGlobalCount$1$1.class
 storm/starter/trident/project/functions/Split.class
+storm/starter/trident/project/countmin/state/TweetWord.class
 storm/starter/TransactionalWords$KeyedCountUpdater.class
 storm/starter/trident/project/countmin/CountMinSketchTopology.class
 storm/starter/trident/project/functions/ExtractSearchArgs.class
@@ -108,6 +110,7 @@ storm/starter/TransactionalGlobalCount$Value.class
 storm/starter/trident/tutorial/spouts/CSVBatchSpout.class
 storm/starter/trident/project/countmin/state/CountMinQuery.class
 storm/starter/TransactionalGlobalCount.class
+storm/starter/trident/project/countmin/state/CountMinSketchState$WordComparator.class
 storm/starter/ManualDRPC.class
 storm/starter/TransactionalGlobalCount$UpdateGlobalCount.class
 storm/starter/trident/project/countmin/state/CountMinSketchState.class

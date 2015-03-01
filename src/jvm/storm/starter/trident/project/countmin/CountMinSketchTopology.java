@@ -40,6 +40,10 @@ import storm.starter.trident.project.functions.Tweet;
 
 import storm.starter.trident.project.functions.ToLowerCase;
 
+import backtype.storm.spout.ShellSpout;
+import backtype.storm.topology.*;
+import java.util.Map;
+
 /**
  *@author: Preetham MS (pmahish@ncsu.edu)
  *Modified by Aaditya Sriram (asriram4@ncsu.edu)
@@ -48,7 +52,24 @@ import storm.starter.trident.project.functions.ToLowerCase;
 
 public class CountMinSketchTopology {
 
-	 public static StormTopology buildTopology( LocalDRPC drpc ) {
+	public static class RandomSentenceSpout extends ShellSpout implements IRichSpout {
+
+        public RandomSentenceSpout() {
+            super("node", "randomsentence.js");
+        }
+
+        @Override
+        public void declareOutputFields(OutputFieldsDeclarer declarer) {
+           	declarer.declare(new Fields("tweet"));
+        }
+
+        @Override
+        public Map<String, Object> getComponentConfiguration() {
+            return null;
+        }
+    }
+
+	public static StormTopology buildTopology( LocalDRPC drpc ) {
 
         TridentTopology topology = new TridentTopology();
 
@@ -66,8 +87,10 @@ public class CountMinSketchTopology {
         String[] topicWords = {"love", "hate"};
         //String[] topicWords = {};
         // Create Twitter's spout
-		TwitterSampleSpout spoutTweets = new TwitterSampleSpout(consumerKey, consumerSecret,
-									accessToken, accessTokenSecret, topicWords);
+		// TwitterSampleSpout spoutTweets = new TwitterSampleSpout(consumerKey, consumerSecret,
+									// accessToken, accessTokenSecret, topicWords);
+
+		RandomSentenceSpout spoutTweets = new RandomSentenceSpout();
 
   //   	FixedBatchSpout spoutFixedBatch = new FixedBatchSpout(new Fields("sentence"), 3,
 		// 	new Values("the cow jumped over the moon"),
@@ -115,7 +138,7 @@ public class CountMinSketchTopology {
         cluster.submitTopology("get_count", conf, buildTopology(drpc));
 
         for (int i = 0; i < 100; i++) {
-            //System.out.println("DRPC RESULT: " + drpc.execute("get_count","love hate"));
+            // System.out.println("DRPC RESULT: " + drpc.execute("get_count","love hate"));
             System.out.println("DRPC RESULT TOPK: " + drpc.execute("get_topk",""));
             Thread.sleep(3000);
         }
