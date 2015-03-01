@@ -29,22 +29,22 @@ public class ParseTweet extends BaseFunction {
 
     @Override
     public void execute(TridentTuple tuple, TridentCollector collector) {
-        if(extracter == null) 
-            extracter = new ContentExtracter();
+        // if(extracter == null) 
+        //     extracter = new ContentExtracter();
         
-        String rawTweetJson = (String)tuple.get(0);
-        // System.out.println("HELLOTY:" + rawTweetJson);
-        Status parsed = parse(rawTweetJson);
-        User user = parsed.getUser();
-
-        for (Content content : extracter.extract(parsed)) {
-            collector.emit(new Values(parsed.getText(), parsed.getId(), user));
-        }
-
-        // Status parsed = (Status)tuple.get(0);
+        // String rawTweetJson = (String)tuple.get(0);
+        // // System.out.println("HELLOTY:" + rawTweetJson);
+        // Status parsed = parse(rawTweetJson);
         // User user = parsed.getUser();
-        // String userScreenName = user.getScreenName();
-        // collector.emit(new Values(parsed.getText(), parsed.getId(), userScreenName));
+
+        // for (Content content : extracter.extract(parsed)) {
+        //     collector.emit(new Values(parsed.getText(), parsed.getId(), user));
+        // }
+
+        Status parsed = (Status)tuple.get(0);
+        User user = parsed.getUser();
+        String userScreenName = user.getScreenName();
+        collector.emit(new Values(parsed.getText(), parsed.getId(), userScreenName));
     }
 
     private Status parse(String rawJson){

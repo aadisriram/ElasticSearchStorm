@@ -76,6 +76,7 @@ public class CountMinSketchTopology {
         int width = 100;
 		int depth = 150;
 		int seed = 100;
+		int topk_count = 20;
 
 		String consumerKey = "v9BIUekmGglxjrty77VbNZdPM";
     	String consumerSecret = "qD4mnlXLHPdhbDOrZvGSRJjv0UEzwxZD3cVbrSqQbWgMXRDn83";
@@ -87,10 +88,11 @@ public class CountMinSketchTopology {
         String[] topicWords = {"love", "hate"};
         //String[] topicWords = {};
         // Create Twitter's spout
-		// TwitterSampleSpout spoutTweets = new TwitterSampleSpout(consumerKey, consumerSecret,
-									// accessToken, accessTokenSecret, topicWords);
+		TwitterSampleSpout spoutTweets = new TwitterSampleSpout(consumerKey, consumerSecret,
+									accessToken, accessTokenSecret, topicWords);
 
-		RandomSentenceSpout spoutTweets = new RandomSentenceSpout();
+        //NodeJS Spout
+		// RandomSentenceSpout spoutTweets = new RandomSentenceSpout();
 
   //   	FixedBatchSpout spoutFixedBatch = new FixedBatchSpout(new Fields("sentence"), 3,
 		// 	new Values("the cow jumped over the moon"),
@@ -108,17 +110,19 @@ public class CountMinSketchTopology {
 			.each(new Fields("wordsl"), new ToLowerCase(), new Fields("lWords"))
 			.each(new Fields("lWords"), new BloomFilter(), new Fields("words"))
 			.each(new Fields("words"), new FilterNull())
-			.partitionPersist(new CountMinSketchStateFactory(depth,width,seed), new Fields("words"), new CountMinSketchUpdater())
+			.partitionPersist(new CountMinSketchStateFactory(depth, width, seed, topk_count), new Fields("words"), new CountMinSketchUpdater())
 			;
 
 
 		topology.newDRPCStream("get_count", drpc)
+			.parallelismHint(3)
 			.each(new Fields("args"), new Split(), new Fields("query"))
 			.stateQuery(countMinDBMS, new Fields("query"), new CountMinQuery(), new Fields("count"))
 			.project(new Fields("query", "count"))
 			;
 
 		topology.newDRPCStream("get_topk", drpc)
+			.parallelismHint(3)
 			.stateQuery(countMinDBMS, new Fields("args"), new TopKQuery(), new Fields("topk"))
 			.project(new Fields("topk"))
 			;

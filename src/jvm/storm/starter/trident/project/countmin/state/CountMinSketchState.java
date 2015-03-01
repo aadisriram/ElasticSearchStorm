@@ -28,16 +28,16 @@ import storm.trident.state.State;
 import storm.trident.state.StateFactory;
 import storm.trident.state.StateType;
 
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.Collections;
 
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
 import storm.starter.trident.project.countmin.state.TweetWord;
+
+import java.io.Serializable;
+
+import java.io.*;
 
 //import com.clearspring.analytics.stream.membership.Filter;
 //import Filter;
@@ -49,7 +49,7 @@ import storm.starter.trident.project.countmin.state.TweetWord;
  * Modified by Preetham MS. Originally by https://github.com/addthis/stream-lib/
  * @author: Preetham MS (pmahish@ncsu.edu)
  */
-public class CountMinSketchState implements State {
+public class CountMinSketchState implements State, Serializable {
 
     public static final long PRIME_MODULUS = (1L << 31) - 1;
 
@@ -60,8 +60,7 @@ public class CountMinSketchState implements State {
     long size;
     double eps;
     double confidence;
-    public SortedMap<Integer, String> topKMap;
-    public Map<String, Integer> topKMapT;
+    public static int topk_size = 10;
 
     class WordComparator implements Comparator<TweetWord> {
 
@@ -79,11 +78,12 @@ public class CountMinSketchState implements State {
         
     }
 
-    public CountMinSketchState(int depth, int width, int seed) {
+    public CountMinSketchState(int depth, int width, int seed, int topk_size) {
         this.depth = depth;
         this.width = width;
         this.eps = 2.0 / width;
         this.confidence = 1 - 1 / Math.pow(2, depth);
+        this.topk_size = topk_size;
         initTablesWith(depth, width, seed);
     }
 
@@ -105,9 +105,6 @@ public class CountMinSketchState implements State {
         this.hashA = hashA;
         this.table = table;
         this.size = size;
-
-        topKMap = new TreeMap<Integer, String>(Collections.reverseOrder());
-        topKMapT = new HashMap<String, Integer>();
     }
 
     private void initTablesWith(int depth, int width, int seed) {
@@ -123,9 +120,6 @@ public class CountMinSketchState implements State {
         for (int i = 0; i < depth; ++i) {
             hashA[i] = r.nextInt(Integer.MAX_VALUE);
         }
-
-        topKMap = new TreeMap<Integer, String>(Collections.reverseOrder());
-        topKMapT = new HashMap<String, Integer>();
     }
 
     public double getRelativeError() {
@@ -164,6 +158,8 @@ public class CountMinSketchState implements State {
 
     
     public void add(String item, long count) {
+
+        item = item.trim();
         if (count < 0) {
             // Actually for negative increments we'll need to use the median
             // instead of minimum, and accuracy will suffer somewhat.
@@ -176,42 +172,25 @@ public class CountMinSketchState implements State {
             table[i][buckets[i]] += count;
         }
         size += count;
+        //Maintaining the top K items in the PQueue
+        if(item.length() > 0) {
 
-        if(item.trim().length() > 0) {
-            TweetWord tw = new TweetWord();
+            //Estimate the count
+            long ct = estimateCount(item);
+            TweetWord tw = new TweetWord(item, ct);
             tw.word = item;
             
+            //If the PQueue already has the element, remove it
             if(queue.contains(tw)) {
                 queue.remove(tw);
             }
 
-            int ct = (int)estimateCount(item);
-            tw.count = ct;
+            //Add the element to the PQueue
             queue.add(tw);
 
-            while(queue.size() > 10)
+            //Remove all elements apart from the top K
+            while(queue.size() > topk_size)
                 queue.poll();
-
-
-            if(topKMapT.containsKey(item)) {
-                topKMap.remove(topKMapT.get(item));
-            }
-
-            topKMapT.put(item, ct);
-            topKMap.put(ct, item);
-
-            SortedMap<Integer, String> temp = new TreeMap<Integer, String>(Collections.reverseOrder());
-            int t_ct = 0;
-
-            int n = Math.min(10, topKMap.size());
-            // System.out.println("TOPK START");
-            for(int i = 0; i < n; i++) {
-                //System.out.println((Integer)topKMap.keySet().toArray()[i] + " : " + (String)topKMap.values().toArray()[i]);
-                temp.put((Integer)topKMap.keySet().toArray()[i], (String)topKMap.values().toArray()[i]);
-            }
-            // System.out.println("TOPK END");
-
-            topKMap = temp;
         }
 
     }
@@ -272,6 +251,22 @@ public class CountMinSketchState implements State {
                     throw new CMSMergeException("Cannot merge estimators of different seed");
                 }
 
+                for(TweetWord tw : estimator.queue) {
+                    if(merged.queue.contains(tw)) {
+                        TweetWord merged_count = new TweetWord(tw.word, tw.count);
+                        for(TweetWord temp : merged.queue) {
+                            if(temp.equals(tw)) {
+                                merged_count.count += temp.count;
+                            }
+                        }
+                        merged.queue.remove(tw);
+                        merged.queue.add(merged_count);
+                    }
+                }
+
+                while(merged.queue.size() > topk_size)
+                    merged.queue.poll();
+
                 for (int i = 0; i < table.length; i++) {
                     for (int j = 0; j < table[i].length; j++) {
                         table[i][j] += estimator.table[i][j];
@@ -287,48 +282,66 @@ public class CountMinSketchState implements State {
     }
 
     public static byte[] serialize(CountMinSketchState sketch) {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        DataOutputStream s = new DataOutputStream(bos);
+
+        ByteArrayOutputStream bos = null;
+        ObjectOutputStream out = null;
         try {
-            s.writeLong(sketch.size);
-            s.writeInt(sketch.depth);
-            s.writeInt(sketch.width);
-            for (int i = 0; i < sketch.depth; ++i) {
-                s.writeLong(sketch.hashA[i]);
-                for (int j = 0; j < sketch.width; ++j) {
-                    s.writeLong(sketch.table[i][j]);
+            bos = new ByteArrayOutputStream();
+            out = new ObjectOutputStream(bos);
+            out.writeObject(sketch);
+            return bos.toByteArray();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
-            return bos.toByteArray();
-        } catch (IOException e) {
-            // Shouldn't happen
-            throw new RuntimeException(e);
+            if (bos != null) {
+                try {
+                    bos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
+        return null;
     }
 
     public static CountMinSketchState deserialize(byte[] data) {
-        ByteArrayInputStream bis = new ByteArrayInputStream(data);
-        DataInputStream s = new DataInputStream(bis);
-        try {
-            CountMinSketchState sketch = new CountMinSketchState();
-            sketch.size = s.readLong();
-            sketch.depth = s.readInt();
-            sketch.width = s.readInt();
-            sketch.eps = 2.0 / sketch.width;
-            sketch.confidence = 1 - 1 / Math.pow(2, sketch.depth);
-            sketch.hashA = new long[sketch.depth];
-            sketch.table = new long[sketch.depth][sketch.width];
-            for (int i = 0; i < sketch.depth; ++i) {
-                sketch.hashA[i] = s.readLong();
-                for (int j = 0; j < sketch.width; ++j) {
-                    sketch.table[i][j] = s.readLong();
+
+        ByteArrayInputStream bis = null;
+        ObjectInputStream ois = null;
+ 
+        try{
+            bis = new ByteArrayInputStream(data);
+            ois = new ObjectInputStream(bis);
+            CountMinSketchState sketch = (CountMinSketchState) (ois.readObject());
+            return  sketch;
+        } catch(IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } finally {
+            if(bis != null) {
+                try {
+                    bis.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
-            return sketch;
-        } catch (IOException e) {
-            // Shouldn't happen
-            throw new RuntimeException(e);
+            if(ois!= null) {
+                try {
+                    ois.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
+        return null;
     }
 
     @Override
