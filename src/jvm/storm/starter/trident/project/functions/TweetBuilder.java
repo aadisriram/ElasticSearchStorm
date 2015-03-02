@@ -39,7 +39,6 @@ import java.io.IOException;
             Document<String> doc  = (Document) objects.getValueByField("document");
             if( tweet == null) {
                 tweet = new Tweet(doc.getSource(), 1);
-	            System.out.println("TWEET BUILDER: New tweet "+ tweet.getText());
 	        } else {
                 tweet.incrementCount();
             }

@@ -125,69 +125,20 @@ public class RealTimeElasticSearchTopology {
     	/**
 		* Create spout(s)
 		**/
-		// Twitter's account credentials passed as args
-        //String consumerKey = args[0];
-        //String consumerSecret = args[1];
-        //String accessToken = args[2];
-        //String accessTokenSecret = args[3];
+        String consumerKey = System.getenv("TWITTER_CONSUMER_KEY");
+    	String consumerSecret = System.getenv("TWITTER_CONSUMER_SECRET");
+    	String accessToken = System.getenv("TWITTER_ACCESS_TOKEN_KEY");
+    	String accessTokenSecret = System.getenv("TWITTER_ACCESS_TOKEN_SECRET");
 
         // Twitter topic of interest
-        //String[] arguments = args.clone();
-        //String[] topicWords = Arrays.copyOfRange(arguments, 4, arguments.length);
-        String consumerKey = "v9BIUekmGglxjrty77VbNZdPM";
-    	String consumerSecret = "qD4mnlXLHPdhbDOrZvGSRJjv0UEzwxZD3cVbrSqQbWgMXRDn83";
-    	String accessToken = "25076520-1T97cLiNDmjqAgFcBDcnwPURkyxh1Ta6WQlTSZkpS";
-    	String accessTokenSecret = "NWnJflgeXljmeKtzkbei3oigd1ung2lahm3vYxJje7M60";
+        String[] topicWords = args.clone();
 
-        // Twitter topic of interest
-        //String[] arguments = args.clone();
-        String[] topicWords = {"love", "hate"};
         // Create Twitter's spout
 		TwitterSampleSpout spoutTweets = new TwitterSampleSpout(consumerKey, consumerSecret,
 									accessToken, accessTokenSecret, topicWords);
 									
+		//NodeJS Spout
 		//RandomSentenceSpout spoutTweets = new RandomSentenceSpout();
-		/***
-		* Here is the useful spout for debugging as it could be of finite size
-		* Change setCycle(false) to setCycle(true) if 
-		* continuous stream of tweets is needed
-		**/
-		// FixedBatchSpout spoutFixedBatch = new FixedBatchSpout(new Fields("sentence"), 3,
-		// 	new Values("the cow jumped over the moon"),
-		// 	new Values("the man went to the store and bought some candy"),
-		// 	new Values("four score and seven years ago"),
-		// 	new Values("how many apples can you eat"),
-		// 	new Values("to be or not to be the person"))
-		// 	;
-		// 	spoutFixedBatch.setCycle(false);
-		
-		
-        /**
-         * Read a stream of tweets, parse and extract
-         * only the text, and its id. Store the stream
-         * using the {@link ElasticSearchState} implementation for Trident.
-		 * NOTE: Commented lines are for debugging only
-		 * TO DO FOR PROJECT 2: PART B:
-		 *    1. Write a spout that ingests real text data stream:
-		 * 		 You are allowed to utilize TweeterSampleSpout provided (DEAFULT), or
-		 * 		 you may consider writing a spout that ingests Wikipedia updates
-		 *		 or any other text stream (e.g., using Google APIs to bring a synopsis of a URL web-page
-		 *		 for a stream of URL web-pages).
-		 *	  2. Write proper support/utility functions to prepare your text data
-		 * 		 for passing to the ES stateFactory: e.g., WikiUpdatesDocumentBuilder(), 
-		 *		 GoogleWebURLSynopsisBuilder().
-         */
-		// topology.newStream("tweets", spoutFixedBatch)
-		// 	//.each(new Fields("sentence"), new Print("sentence field"))
-		// 	.parallelismHint(1)
-		// 	.each(new Fields("sentence"), new DocumentBuilder(), new Fields("document"))
-		// 	.each(new Fields("document"), new ExtractDocumentInfo(), new Fields("id", "index", "type"))
-		// 	//.each(new Fields("id"), new Print("id field"))
-		// 	.groupBy(new Fields("index", "type", "id"))
-		// 	.persistentAggregate(stateFactory,  new Fields("document"), new TweetBuilder(), new Fields("tweet"))
-		// 	//.each(new Fields("tweet"), new Print("tweet field"))
-		// 	.parallelismHint(1) 
-  //           ;
 		
 		/*** 
 		* If you want to use TweeterSampleSpout instead of FixedBatchSpout

@@ -58,6 +58,14 @@ function RandomSentenceSpout() {
 RandomSentenceSpout.prototype = Object.create(Spout.prototype);
 RandomSentenceSpout.prototype.constructor = RandomSentenceSpout;
 
+RandomSentenceSpout.prototype.emitBatch = function(id, collector) {
+    var message = queue.getMessageSync();
+    if (message != null) {
+        collector.emit(new Values(message));
+        emitted++;
+    }
+}
+
 RandomSentenceSpout.prototype.nextTuple = function(done) {
     var self = this;
     var id = this.createNextTupleId();

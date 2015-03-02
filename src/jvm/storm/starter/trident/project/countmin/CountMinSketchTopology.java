@@ -38,12 +38,11 @@ import storm.starter.trident.project.filters.Print;
 import storm.starter.trident.project.filters.PrintFilter;
 import storm.starter.trident.project.functions.Tweet;
 
-import storm.starter.trident.project.functions.ToLowerCase;
+import storm.starter.trident.project.functions.NormalizeText;
 
 import backtype.storm.spout.ShellSpout;
 import backtype.storm.topology.*;
 import java.util.Map;
-// import storm.trident.spout;
 
 /**
  *@author: Preetham MS (pmahish@ncsu.edu)
@@ -77,7 +76,7 @@ public class CountMinSketchTopology {
         int width = 100;
 		int depth = 150;
 		int seed = 100;
-		int topk_count = 5;
+		int topk_count = 10;
 
 		String consumerKey = System.getenv("TWITTER_CONSUMER_KEY");
     	String consumerSecret = System.getenv("TWITTER_CONSUMER_SECRET");
@@ -95,7 +94,7 @@ public class CountMinSketchTopology {
 			.each(new Fields("tweet"), new ParseTweet(), new Fields("text", "tweetId", "user"))
 			.each(new Fields("text", "tweetId", "user"), new SentenceBuilder(), new Fields("sentence"))
 			.each(new Fields("sentence"), new Split(), new Fields("wordsl"))
-			.each(new Fields("wordsl"), new ToLowerCase(), new Fields("lWords"))
+			.each(new Fields("wordsl"), new NormalizeText(), new Fields("lWords"))
 			.each(new Fields("lWords"), new BloomFilter(), new Fields("words"))
 			.each(new Fields("words"), new FilterNull())
 			.partitionPersist(new CountMinSketchStateFactory(depth, width, seed, topk_count), new Fields("words"), new CountMinSketchUpdater())

@@ -8,14 +8,15 @@ import storm.trident.tuple.TridentTuple;
 
 
 /**
- * @author Enno Shioji (enno.shioji@peerindex.com)
+ * @author Aaditya Sriram (asriram4@ncsu.edu)
  */
-public class ToLowerCase extends BaseFunction {
+public class NormalizeText extends BaseFunction {
 
     @Override
     public void execute(TridentTuple tuple, TridentCollector collector) {
 
         String string = tuple.getString(0);
+        string = string.replaceAll("[^a-zA-Z0-9]", "");
         collector.emit(new Values(string.toLowerCase()));
     }
 }

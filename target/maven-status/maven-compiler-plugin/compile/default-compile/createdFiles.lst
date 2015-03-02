@@ -16,7 +16,6 @@ storm/starter/TransactionalWords$BucketCountUpdater.class
 storm/starter/TransactionalGlobalCount$BatchCount.class
 storm/starter/spout/TwitterSampleSpout.class
 storm/starter/trident/tutorial/filters/PrintFilter.class
-storm/starter/trident/project/functions/ToLowerCase.class
 storm/starter/trident/project/filters/PrintFilter.class
 storm/starter/PrintSampleStream.class
 storm/starter/util/StormRunner.class
@@ -111,6 +110,7 @@ storm/starter/trident/tutorial/spouts/CSVBatchSpout.class
 storm/starter/trident/project/countmin/state/CountMinQuery.class
 storm/starter/TransactionalGlobalCount.class
 storm/starter/trident/project/countmin/state/CountMinSketchState$WordComparator.class
+storm/starter/trident/project/functions/NormalizeText.class
 storm/starter/ManualDRPC.class
 storm/starter/TransactionalGlobalCount$UpdateGlobalCount.class
 storm/starter/trident/project/countmin/state/CountMinSketchState.class
